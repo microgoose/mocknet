@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package net.mocknet.notification.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = false;
+option java_outer_classname = "NotificationCommandsProto";
+option java_package = "net.mocknet.contracts.notification.v1";
+
+message SendEmailVerificationCommand {
+  string user_id = 1;
+  string email = 2;
+  string name = 3;
+  string locale = 4;
+  string confirmation_token = 5;
+  google.protobuf.Timestamp expires_at = 6;
+}
+
+message SendPasswordResetCommand {
+  string user_id = 1;
+  string email = 2;
+  string name = 3;
+  string locale = 4;
+  string reset_token = 5;
+  google.protobuf.Timestamp expires_at = 6;
+}
+
+message SendPasswordChangedNotificationCommand {
+  string user_id = 1;
+  string email = 2;
+  string name = 3;
+  string locale = 4;
+  google.protobuf.Timestamp changed_at = 5;
+}

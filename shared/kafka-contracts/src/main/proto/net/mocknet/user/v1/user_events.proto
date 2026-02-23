@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package net.mocknet.user.v1;
+
+option java_multiple_files = false;
+option java_outer_classname = "UserEventsProto";
+option java_package = "net.mocknet.contracts.user.v1";
+
+message UserRegisteredEvent {
+  string user_id = 1;
+  string email = 2;
+  string login = 3;
+  string first_name = 4;
+  string last_name = 5;
+}
+
+message UserEmailChangedEvent {
+  string user_id = 1;
+  string old_email = 2;
+  string new_email = 3;
+}
+
+message UserPasswordChangedEvent {
+  string user_id = 1;
+  string email = 2;
+  string locale = 3;
+}

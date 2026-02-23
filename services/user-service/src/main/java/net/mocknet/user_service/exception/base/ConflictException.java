@@ -1,0 +1,10 @@
+package net.mocknet.user_service.exception.base;
+
+import net.mocknet.user_service.exception.LocalizedException;
+
+public abstract class ConflictException extends LocalizedException {
+
+    protected ConflictException(String messageKey, Object... args) {
+        super(messageKey, args);
+    }
+}

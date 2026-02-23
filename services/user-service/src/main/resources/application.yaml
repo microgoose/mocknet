@@ -1,0 +1,69 @@
+server:
+  port: 9000
+
+logging:
+  level:
+    org.springframework.security: debug
+
+app:
+  email-verification:
+    token-ttl-hours: 24
+    default-locale: ru
+
+  rsa:
+    key-id: c675f49c-9480-4d5f-847e-617d8ea9d218
+    private-key: classpath:certs/private-key.pem
+    public-key: classpath:certs/public-key.pem
+
+  clients:
+    gateway:
+      require-authorization-consent: true
+      require-proof-key: false
+      registration:
+        client-id: "gateway"
+        client-secret: "secret"
+        client-authentication-methods:
+          - "client_secret_basic"
+        authorization-grant-types:
+          - "authorization_code"
+          - "client_credentials"
+          - "refresh_token"
+        redirect-uris:
+          - "http://127.0.0.1:9000/login/oauth2/code/gateway"
+        post-logout-redirect-uris:
+          - "http://127.0.0.1:9000/"
+        scopes:
+          - "openid"
+          - "profile"
+
+spring:
+  application:
+    name: user-service
+
+  profiles:
+    include: dev
+
+  messages:
+    basename: validation-messages
+    encoding: UTF-8
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/user
+    driver-class-name: org.postgresql.Driver
+    username: user
+    password: password
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+    open-in-view: false
+
+  kafka:
+    bootstrap-servers: localhost:29092
+    producer:
+      acks: all
+      retries: 0
