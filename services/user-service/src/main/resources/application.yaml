@@ -40,9 +40,6 @@ spring:
   application:
     name: user-service
 
-  profiles:
-    include: dev
-
   messages:
     basename: validation-messages
     encoding: UTF-8

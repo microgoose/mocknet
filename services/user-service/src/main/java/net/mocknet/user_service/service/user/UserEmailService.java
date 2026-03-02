@@ -27,7 +27,7 @@ public class UserEmailService {
             user,
             verificationToken.getToken().toString(),
             verificationToken.getExpiresAt(),
-            emailVerificationConfig.getDefaultLocale()
+            emailVerificationConfig.getDefaultLocale().toString()
         );
     }
 }

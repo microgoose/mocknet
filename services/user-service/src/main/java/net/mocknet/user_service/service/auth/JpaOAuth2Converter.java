@@ -1,5 +1,6 @@
 package net.mocknet.user_service.service.auth;
 
+import lombok.RequiredArgsConstructor;
 import net.mocknet.user_service.model.client.Authorization;
 import net.mocknet.user_service.utils.SecurityJsonMapper;
 import org.springframework.security.oauth2.core.*;
@@ -8,18 +9,17 @@ import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.function.Consumer;
 
-public class AuthorizationConverter {
+@Component
+@RequiredArgsConstructor
+public class JpaOAuth2Converter {
 
     private final SecurityJsonMapper securityJsonMapper;
-
-    public AuthorizationConverter(ClassLoader classLoader) {
-        this.securityJsonMapper = new SecurityJsonMapper(classLoader);
-    }
 
     public Authorization toEntity(OAuth2Authorization authorization) {
         Authorization entity = new Authorization();

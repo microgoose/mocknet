@@ -1,5 +1,6 @@
 package net.mocknet.user_service.service.auth;
 
+import lombok.RequiredArgsConstructor;
 import net.mocknet.user_service.model.client.Authorization;
 import net.mocknet.user_service.repository.AuthorizationRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
@@ -14,25 +15,19 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class JpaOAuth2AuthorizationService implements OAuth2AuthorizationService {
+@RequiredArgsConstructor
+public class JpaOAuth2Service implements OAuth2AuthorizationService {
 
     private final AuthorizationRepository authorizationRepository;
     private final RegisteredClientRepository registeredClientRepository;
-    private final AuthorizationConverter authorizationConverter;
-
-    public JpaOAuth2AuthorizationService(AuthorizationRepository authorizationRepository, RegisteredClientRepository registeredClientRepository) {
-        this.authorizationRepository = authorizationRepository;
-        this.registeredClientRepository = registeredClientRepository;
-        ClassLoader classLoader = JpaOAuth2AuthorizationService.class.getClassLoader();
-        this.authorizationConverter = new AuthorizationConverter(classLoader);
-    }
+    private final JpaOAuth2Converter jpaOAuth2Converter;
 
     @Override
     public void save(OAuth2Authorization authorization) {
         if (authorization == null)
             throw new IllegalArgumentException("Авторизация не может быть null");
 
-        this.authorizationRepository.save(authorizationConverter.toEntity(authorization));
+        this.authorizationRepository.save(jpaOAuth2Converter.toEntity(authorization));
     }
 
     @Override
@@ -90,6 +85,6 @@ public class JpaOAuth2AuthorizationService implements OAuth2AuthorizationService
                 "Клиент с ID «" + entity.getRegisteredClientId() + "» не найден"
             );
 
-        return authorizationConverter.toObject(entity, registeredClient);
+        return jpaOAuth2Converter.toObject(entity, registeredClient);
     }
 }

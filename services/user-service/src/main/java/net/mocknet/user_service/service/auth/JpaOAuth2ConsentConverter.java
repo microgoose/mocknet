@@ -12,7 +12,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Component
-public class AuthorizationConsentConverter {
+public class JpaOAuth2ConsentConverter {
 
     public AuthorizationConsent toEntity(OAuth2AuthorizationConsent authorizationConsent) {
         AuthorizationConsent entity = new AuthorizationConsent();

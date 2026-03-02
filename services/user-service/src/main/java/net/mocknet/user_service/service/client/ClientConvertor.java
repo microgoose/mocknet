@@ -1,5 +1,6 @@
 package net.mocknet.user_service.service.client;
 
+import lombok.RequiredArgsConstructor;
 import net.mocknet.user_service.model.client.Client;
 import net.mocknet.user_service.utils.SecurityJsonMapper;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -7,6 +8,7 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -14,13 +16,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@Component
+@RequiredArgsConstructor
 public class ClientConvertor {
 
     private final SecurityJsonMapper securityJsonMapper;
-
-    public ClientConvertor(ClassLoader classLoader) {
-        this.securityJsonMapper = new SecurityJsonMapper(classLoader);
-    }
 
     public Client toEntity(RegisteredClient registeredClient) {
         List<String> clientAuthenticationMethods = new ArrayList<>(registeredClient.getClientAuthenticationMethods().size());

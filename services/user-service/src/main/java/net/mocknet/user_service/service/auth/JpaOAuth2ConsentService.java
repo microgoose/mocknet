@@ -9,25 +9,25 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.stereotype.Service;
 
 @Service
-public class JpaOAuth2AuthorizationConsentService implements OAuth2AuthorizationConsentService {
+public class JpaOAuth2ConsentService implements OAuth2AuthorizationConsentService {
 
     private final AuthorizationConsentRepository authorizationConsentRepository;
     private final RegisteredClientRepository registeredClientRepository;
-    private final AuthorizationConsentConverter authorizationConsentConverter;
+    private final JpaOAuth2ConsentConverter jpaOAuth2ConsentConverter;
 
-    public JpaOAuth2AuthorizationConsentService(AuthorizationConsentRepository authorizationConsentRepository,
-                                                RegisteredClientRepository registeredClientRepository,
-                                                AuthorizationConsentConverter authorizationConsentConverter) {
+    public JpaOAuth2ConsentService(AuthorizationConsentRepository authorizationConsentRepository,
+                                   RegisteredClientRepository registeredClientRepository,
+                                   JpaOAuth2ConsentConverter jpaOAuth2ConsentConverter) {
         if (authorizationConsentRepository == null)
             throw new IllegalArgumentException("Репозиторий согласий не может быть null");
         if (registeredClientRepository == null)
             throw new IllegalArgumentException("Репозиторий клиентов не может быть null");
-        if (authorizationConsentConverter == null)
+        if (jpaOAuth2ConsentConverter == null)
             throw new IllegalArgumentException("Конвертер согласий не может быть null");
 
         this.authorizationConsentRepository = authorizationConsentRepository;
         this.registeredClientRepository = registeredClientRepository;
-        this.authorizationConsentConverter = authorizationConsentConverter;
+        this.jpaOAuth2ConsentConverter = jpaOAuth2ConsentConverter;
     }
 
     @Override
@@ -36,7 +36,7 @@ public class JpaOAuth2AuthorizationConsentService implements OAuth2Authorization
             throw new IllegalArgumentException("Согласие авторизации не может быть null");
 
         this.authorizationConsentRepository.save(
-            authorizationConsentConverter.toEntity(authorizationConsent)
+            jpaOAuth2ConsentConverter.toEntity(authorizationConsent)
         );
     }
 
@@ -73,6 +73,6 @@ public class JpaOAuth2AuthorizationConsentService implements OAuth2Authorization
                 "Клиент с ID «" + registeredClientId + "» не найден"
             );
 
-        return authorizationConsentConverter.toObject(authorizationConsent, registeredClient);
+        return jpaOAuth2ConsentConverter.toObject(authorizationConsent, registeredClient);
     }
 }

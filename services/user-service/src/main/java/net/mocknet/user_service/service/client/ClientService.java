@@ -1,21 +1,17 @@
 package net.mocknet.user_service.service.client;
 
+import lombok.RequiredArgsConstructor;
 import net.mocknet.user_service.repository.ClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.stereotype.Service;
 
 @Service
-public class JpaRegisteredClientService implements RegisteredClientRepository {
+@RequiredArgsConstructor
+public class ClientService implements RegisteredClientRepository {
 
     private final ClientRepository clientRepository;
     private final ClientConvertor clientConvertor;
-
-    public JpaRegisteredClientService(ClientRepository clientRepository) {
-        this.clientRepository = clientRepository;
-        ClassLoader classLoader = JpaRegisteredClientService.class.getClassLoader();
-        this.clientConvertor = new ClientConvertor(classLoader);
-    }
 
     @Override
     public void save(RegisteredClient registeredClient) {
