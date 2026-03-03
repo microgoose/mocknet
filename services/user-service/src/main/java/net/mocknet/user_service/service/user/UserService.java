@@ -40,9 +40,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     public User getUser(UUID id) {
-        return userRepository
-            .findById(id)
-            .orElseThrow(() -> new UserNotFound(id));
+        return userRepository.findById(id).orElseThrow(() -> new UserNotFound(id));
     }
 
     public ProfileDto getProfile(UUID id) {
@@ -55,24 +53,16 @@ public class UserService {
         Optional<User> byLogin = userRepository.findByLogin(request.getLogin());
 
         // Если найден верифицированный пользователь — конфликт
-        byEmail
-            .filter(User::isVerified)
-            .ifPresent(u -> {
-                throw new EmailAlreadyExistsException(request.getEmail());
-            });
-        byLogin
-            .filter(User::isVerified)
-            .ifPresent(u -> {
-                throw new LoginAlreadyExistsException(request.getLogin());
-            });
+        byEmail.filter(User::isVerified).ifPresent(u -> {
+            throw new EmailAlreadyExistsException(request.getEmail());
+        });
+        byLogin.filter(User::isVerified).ifPresent(u -> {
+            throw new LoginAlreadyExistsException(request.getLogin());
+        });
 
         // Если email и login принадлежат разным неверифицированным пользователям —
         // удаляем того, кто занимает запрошенный login, чтобы освободить слот
-        if (
-            byEmail.isPresent() &&
-                byLogin.isPresent() &&
-                !byEmail.get().getId().equals(byLogin.get().getId())
-        ) {
+        if (byEmail.isPresent() && byLogin.isPresent() && !byEmail.get().getId().equals(byLogin.get().getId())) {
             User staleLoginUser = byLogin.get();
             emailTokenService.deleteAllByUser(staleLoginUser);
             userRepository.delete(staleLoginUser);
@@ -98,9 +88,7 @@ public class UserService {
             // Создаём нового пользователя
             Role userRole = roleRepository
                 .findByName(RoleName.ROLE_USER)
-                .orElseThrow(() ->
-                    new RoleNotFoundException(RoleName.ROLE_USER.name())
-                );
+                .orElseThrow(() -> new RoleNotFoundException(RoleName.ROLE_USER.name()));
 
             String passwordHash = passwordEncoder.encode(request.getPassword());
             User newUser = userMapper.toEntity(request, passwordHash);
@@ -111,8 +99,7 @@ public class UserService {
 
         userEmailService.verifyEmail(user);
 
-        if (isNewUser)
-            userEventProducer.publishUserRegistered(user);
+        if (isNewUser) userEventProducer.publishUserRegistered(user);
 
         return userMapper.toRegisterResponseDto(user);
     }

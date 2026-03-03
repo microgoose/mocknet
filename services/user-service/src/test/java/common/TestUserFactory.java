@@ -1,5 +1,8 @@
 package common;
 
+import net.mocknet.user_service.dto.ProfileDto;
+import net.mocknet.user_service.dto.RegisterRequestDto;
+import net.mocknet.user_service.dto.UpdateProfileDto;
 import net.mocknet.user_service.model.user.Role;
 import net.mocknet.user_service.model.user.RoleName;
 import net.mocknet.user_service.model.user.User;
@@ -32,7 +35,7 @@ public final class TestUserFactory {
 
     public static final Set<Role> ROLES = new HashSet<>(List.of(ROLE_USER));
 
-    public static User createBaseUser() {
+    public static User createUser() {
         User user = new User();
         user.setId(ID);
         user.setLogin(LOGIN);
@@ -48,5 +51,33 @@ public final class TestUserFactory {
         user.setUpdatedAt(UPDATED_AT);
         user.setLastLoginAt(LAST_LOGIN_AT);
         return user;
+    }
+
+    public static RegisterRequestDto createRegisterRequest() {
+        RegisterRequestDto registerRequest = new RegisterRequestDto();
+        registerRequest.setLogin(LOGIN);
+        registerRequest.setEmail(EMAIL);
+        registerRequest.setPassword(PASSWORD);
+        registerRequest.setFirstName(FIRST_NAME);
+        registerRequest.setLastName(LAST_NAME);
+        return registerRequest;
+    }
+
+    public static ProfileDto createProfileDto() {
+        ProfileDto profileDto = new ProfileDto();
+        profileDto.setId(ID);
+        profileDto.setLogin(LOGIN);
+        profileDto.setEmail(EMAIL);
+        return profileDto;
+    }
+
+    public static UpdateProfileDto createUpdateProfile() {
+        UpdateProfileDto updateProfileRequest = new UpdateProfileDto();
+        updateProfileRequest.setLogin(LOGIN);
+        updateProfileRequest.setEmail(EMAIL);
+        updateProfileRequest.setFirstName(FIRST_NAME);
+        updateProfileRequest.setLastName(LAST_NAME);
+        updateProfileRequest.setAvatarUrl(AVATAR_URL);
+        return updateProfileRequest;
     }
 }

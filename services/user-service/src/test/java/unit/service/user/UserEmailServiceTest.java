@@ -20,10 +20,8 @@ import java.time.OffsetDateTime;
 import java.util.Locale;
 import java.util.UUID;
 
-
-import static common.TestEmailTokenFactory.createBaseEmailToken;
-import static common.TestUserFactory.createBaseUser;
-
+import static common.TestEmailTokenFactory.createEmailToken;
+import static common.TestUserFactory.createUser;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,7 +48,7 @@ class UserEmailServiceTest {
 
     @BeforeEach
     void setUp() {
-        testUser = createBaseUser();
+        testUser = createUser();
         testUser.setVerified(false);
 
         testTokenUuid = TestEmailTokenFactory.TOKEN;
@@ -58,7 +56,7 @@ class UserEmailServiceTest {
         testLocale = Locale.US;
         testLocaleString = testLocale.toString();
 
-        testVerificationToken = createBaseEmailToken();
+        testVerificationToken = createEmailToken();
     }
 
     @Test
@@ -136,7 +134,7 @@ class UserEmailServiceTest {
         UUID expectedTokenUuid = UUID.randomUUID();
         OffsetDateTime expectedExpiresAt = OffsetDateTime.now().plusHours(48);
 
-        EmailToken customToken = createBaseEmailToken();
+        EmailToken customToken = createEmailToken();
         customToken.setToken(expectedTokenUuid);
         customToken.setExpiresAt(expectedExpiresAt);
 

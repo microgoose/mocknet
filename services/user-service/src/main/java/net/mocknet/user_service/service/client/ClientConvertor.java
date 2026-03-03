@@ -49,7 +49,7 @@ public class ClientConvertor {
         return entity;
     }
 
-    public RegisteredClient toObject(Client client) {
+    public RegisteredClient toRegisteredClient(Client client) {
         Set<String> clientAuthenticationMethods = StringUtils.commaDelimitedListToSet(
             client.getClientAuthenticationMethods());
         Set<String> authorizationGrantTypes = StringUtils.commaDelimitedListToSet(

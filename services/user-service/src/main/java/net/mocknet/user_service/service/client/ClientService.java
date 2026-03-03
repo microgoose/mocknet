@@ -28,7 +28,7 @@ public class ClientService implements RegisteredClientRepository {
         }
         return this.clientRepository
             .findById(id)
-            .map(clientConvertor::toObject)
+            .map(clientConvertor::toRegisteredClient)
             .orElse(null);
     }
 
@@ -39,7 +39,7 @@ public class ClientService implements RegisteredClientRepository {
         }
         return this.clientRepository
             .findByClientId(clientId)
-            .map(clientConvertor::toObject)
+            .map(clientConvertor::toRegisteredClient)
             .orElse(null);
     }
 }

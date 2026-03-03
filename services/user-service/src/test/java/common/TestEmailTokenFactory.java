@@ -12,12 +12,12 @@ public final class TestEmailTokenFactory {
 
     public static final UUID ID = UUID.randomUUID();
     public static final UUID TOKEN = UUID.randomUUID();
-    public static final User USER = TestUserFactory.createBaseUser();
+    public static final User USER = TestUserFactory.createUser();
     public static final EmailTokenType TYPE = EmailTokenType.VERIFICATION;
     public static final OffsetDateTime EXPIRES_AT = OffsetDateTime.now().plusHours(24).truncatedTo(ChronoUnit.MILLIS);
     public static final OffsetDateTime USED_AT = null;
 
-    public static EmailToken createBaseEmailToken(User user) {
+    public static EmailToken createEmailToken(User user) {
         EmailToken emailToken = new EmailToken();
         emailToken.setId(ID);
         emailToken.setToken(TOKEN);
@@ -28,7 +28,7 @@ public final class TestEmailTokenFactory {
         return emailToken;
     }
 
-    public static EmailToken createBaseEmailToken() {
-        return createBaseEmailToken(USER);
+    public static EmailToken createEmailToken() {
+        return createEmailToken(USER);
     }
 }
