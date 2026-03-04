@@ -1,13 +1,17 @@
 package net.mocknet.user_service.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-@Getter
+@Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class RegisterResponseDto {
 
     private UUID id;
@@ -15,6 +19,6 @@ public class RegisterResponseDto {
     private String email;
     private String firstName;
     private String lastName;
-    private boolean isVerified;
+    private Boolean isVerified;
     private OffsetDateTime createdAt;
 }

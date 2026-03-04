@@ -1,4 +1,4 @@
-package unit.utils;
+package net.mocknet.user_service.unit.utils;
 
 import net.mocknet.user_service.utils.SecurityJsonMapper;
 import org.junit.jupiter.api.Test;

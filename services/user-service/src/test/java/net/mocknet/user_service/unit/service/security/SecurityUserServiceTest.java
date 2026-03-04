@@ -1,4 +1,4 @@
-package unit.service.security;
+package net.mocknet.user_service.unit.service.security;
 
 import net.mocknet.user_service.model.security.SecurityUser;
 import net.mocknet.user_service.model.user.Role;
@@ -17,7 +17,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.*;
 
-import static common.TestUserFactory.createUser;
+import static net.mocknet.user_service.common.factory.TestUserFactory.createUser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;

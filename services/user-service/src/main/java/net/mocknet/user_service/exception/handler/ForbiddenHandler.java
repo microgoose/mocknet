@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.mocknet.user_service.config.MessageResolver;
 import net.mocknet.user_service.exception.base.ForbiddenException;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.Locale;
 
 @Slf4j
+@Order(400)
 @RestControllerAdvice
 @RequiredArgsConstructor
 public class ForbiddenHandler {

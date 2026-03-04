@@ -1,5 +1,7 @@
 package net.mocknet.user_service.config.security;
 
+import lombok.RequiredArgsConstructor;
+import net.mocknet.user_service.service.security.JwtToSecurityUserConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -18,7 +20,10 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtToSecurityUserConverter  jwtToSecurityUserConverter;
 
     @Bean
     @Order(1)
@@ -54,7 +59,7 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(Customizer.withDefaults())
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtToSecurityUserConverter))
             )
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)

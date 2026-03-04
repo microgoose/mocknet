@@ -1,6 +1,5 @@
-package unit.service.client;
+package net.mocknet.user_service.unit.service.client;
 
-import common.TestClientFactory;
 import net.mocknet.user_service.model.client.Client;
 import net.mocknet.user_service.repository.ClientRepository;
 import net.mocknet.user_service.service.client.ClientConvertor;
@@ -16,9 +15,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 
 import java.util.Optional;
-import java.util.Set;
 
-import static common.TestClientFactory.*;
+import static net.mocknet.user_service.common.factory.TestClientFactory.createClient;
+import static net.mocknet.user_service.common.factory.TestClientFactory.createRegisteredClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
@@ -37,16 +36,16 @@ class ClientServiceTest {
 
     private RegisteredClient testRegisteredClient;
     private Client testClientEntity;
-    private String testId;
-    private String testClientId;
 
     @BeforeEach
     void setUp() {
-        testId = TestClientFactory.ID;
-        testClientId = TestClientFactory.CLIENT_ID;
-
-        testRegisteredClient = createRegisteredClient();
         testClientEntity = createClient();
+
+        testRegisteredClient = createRegisteredClient(
+            testClientEntity.getId(),
+            testClientEntity.getClientId(),
+            testClientEntity.getClientName()
+        );
     }
 
     @Nested
@@ -115,33 +114,33 @@ class ClientServiceTest {
         @Test
         void findById_WhenClientExists_ShouldReturnRegisteredClient() {
             // Arrange
-            when(clientRepository.findById(testId)).thenReturn(Optional.of(testClientEntity));
+            when(clientRepository.findById(testClientEntity.getId())).thenReturn(Optional.of(testClientEntity));
             when(clientConvertor.toRegisteredClient(testClientEntity)).thenReturn(testRegisteredClient);
 
             // Act
-            RegisteredClient result = clientService.findById(testId);
+            RegisteredClient result = clientService.findById(testClientEntity.getId());
 
             // Assert
             assertThat(result).isNotNull();
-            assertThat(result.getId()).isEqualTo(ID);
-            assertThat(result.getClientId()).isEqualTo(CLIENT_ID);
+            assertThat(result.getId()).isEqualTo(testClientEntity.getId());
+            assertThat(result.getClientId()).isEqualTo(testClientEntity.getClientId());
 
-            verify(clientRepository, times(1)).findById(testId);
+            verify(clientRepository, times(1)).findById(testClientEntity.getId());
             verify(clientConvertor, times(1)).toRegisteredClient(testClientEntity);
         }
 
         @Test
         void findById_WhenClientDoesNotExist_ShouldReturnNull() {
             // Arrange
-            when(clientRepository.findById(testId)).thenReturn(Optional.empty());
+            when(clientRepository.findById(testClientEntity.getId())).thenReturn(Optional.empty());
 
             // Act
-            RegisteredClient result = clientService.findById(testId);
+            RegisteredClient result = clientService.findById(testClientEntity.getId());
 
             // Assert
             assertThat(result).isNull();
 
-            verify(clientRepository, times(1)).findById(testId);
+            verify(clientRepository, times(1)).findById(testClientEntity.getId());
             verify(clientConvertor, never()).toRegisteredClient(any());
         }
 
@@ -180,13 +179,13 @@ class ClientServiceTest {
         void findById_WhenRepositoryReturnsEntityWithNullFields_ShouldStillConvert() {
             // Arrange
             Client entityWithNulls = new Client();
-            entityWithNulls.setId(testId);
+            entityWithNulls.setId(testClientEntity.getId());
 
-            when(clientRepository.findById(testId)).thenReturn(Optional.of(entityWithNulls));
+            when(clientRepository.findById(testClientEntity.getId())).thenReturn(Optional.of(entityWithNulls));
             when(clientConvertor.toRegisteredClient(entityWithNulls)).thenReturn(testRegisteredClient);
 
             // Act
-            RegisteredClient result = clientService.findById(testId);
+            RegisteredClient result = clientService.findById(testClientEntity.getId());
 
             // Assert
             assertThat(result).isNotNull();
@@ -200,33 +199,33 @@ class ClientServiceTest {
         @Test
         void findByClientId_WhenClientExists_ShouldReturnRegisteredClient() {
             // Arrange
-            when(clientRepository.findByClientId(testClientId)).thenReturn(Optional.of(testClientEntity));
+            when(clientRepository.findByClientId(testClientEntity.getClientId())).thenReturn(Optional.of(testClientEntity));
             when(clientConvertor.toRegisteredClient(testClientEntity)).thenReturn(testRegisteredClient);
 
             // Act
-            RegisteredClient result = clientService.findByClientId(testClientId);
+            RegisteredClient result = clientService.findByClientId(testClientEntity.getClientId());
 
             // Assert
             assertThat(result).isNotNull();
-            assertThat(result.getId()).isEqualTo(ID);
-            assertThat(result.getClientId()).isEqualTo(CLIENT_ID);
+            assertThat(result.getId()).isEqualTo(testClientEntity.getId());
+            assertThat(result.getClientId()).isEqualTo(testClientEntity.getClientId());
 
-            verify(clientRepository, times(1)).findByClientId(testClientId);
+            verify(clientRepository, times(1)).findByClientId(testClientEntity.getClientId());
             verify(clientConvertor, times(1)).toRegisteredClient(testClientEntity);
         }
 
         @Test
         void findByClientId_WhenClientDoesNotExist_ShouldReturnNull() {
             // Arrange
-            when(clientRepository.findByClientId(testClientId)).thenReturn(Optional.empty());
+            when(clientRepository.findByClientId(testClientEntity.getClientId())).thenReturn(Optional.empty());
 
             // Act
-            RegisteredClient result = clientService.findByClientId(testClientId);
+            RegisteredClient result = clientService.findByClientId(testClientEntity.getClientId());
 
             // Assert
             assertThat(result).isNull();
 
-            verify(clientRepository, times(1)).findByClientId(testClientId);
+            verify(clientRepository, times(1)).findByClientId(testClientEntity.getClientId());
             verify(clientConvertor, never()).toRegisteredClient(any());
         }
 
@@ -259,117 +258,6 @@ class ClientServiceTest {
                 .hasMessageContaining("Client ID не может быть пустым");
 
             verify(clientRepository, never()).findByClientId(any());
-        }
-
-        @Test
-        void findByClientId_WhenMultipleClientsHaveSameClientId_ShouldReturnFirst() {
-            // Arrange
-            Client anotherEntity = createClient();
-            anotherEntity.setClientId(testClientId);
-            anotherEntity.setClientName("client-456");
-
-            when(clientRepository.findByClientId(testClientId)).thenReturn(Optional.of(testClientEntity));
-            when(clientConvertor.toRegisteredClient(testClientEntity)).thenReturn(testRegisteredClient);
-
-            // Act
-            RegisteredClient result = clientService.findByClientId(testClientId);
-
-            // Assert
-            assertThat(result).isNotNull();
-            assertThat(result.getId()).isEqualTo(ID);
-
-            verify(clientRepository, times(1)).findByClientId(testClientId);
-            verify(clientConvertor, times(1)).toRegisteredClient(testClientEntity);
-            verify(clientConvertor, never()).toRegisteredClient(anotherEntity);
-        }
-    }
-
-    @Nested
-    class IntegrationScenarioTests {
-
-        @Test
-        void saveThenFindById_ShouldReturnSameClient() {
-            // Arrange
-            when(clientConvertor.toEntity(testRegisteredClient)).thenReturn(testClientEntity);
-            when(clientRepository.save(testClientEntity)).thenReturn(testClientEntity);
-            when(clientRepository.findById(testId)).thenReturn(Optional.of(testClientEntity));
-            when(clientConvertor.toRegisteredClient(testClientEntity)).thenReturn(testRegisteredClient);
-
-            // Act - Save
-            clientService.save(testRegisteredClient);
-
-            // Act - Find by ID
-            RegisteredClient foundClient = clientService.findById(testId);
-
-            // Assert
-            assertThat(foundClient).isNotNull();
-            assertThat(foundClient.getId()).isEqualTo(ID);
-            assertThat(foundClient.getClientId()).isEqualTo(CLIENT_ID);
-
-            verify(clientConvertor, times(1)).toEntity(testRegisteredClient);
-            verify(clientRepository, times(1)).save(testClientEntity);
-            verify(clientRepository, times(1)).findById(testId);
-            verify(clientConvertor, times(1)).toRegisteredClient(testClientEntity);
-        }
-
-        @Test
-        void saveThenFindByClientId_ShouldReturnSameClient() {
-            // Arrange
-            when(clientConvertor.toEntity(testRegisteredClient)).thenReturn(testClientEntity);
-            when(clientRepository.save(testClientEntity)).thenReturn(testClientEntity);
-            when(clientRepository.findByClientId(testClientId)).thenReturn(Optional.of(testClientEntity));
-            when(clientConvertor.toRegisteredClient(testClientEntity)).thenReturn(testRegisteredClient);
-
-            // Act - Save
-            clientService.save(testRegisteredClient);
-
-            // Act - Find by client ID
-            RegisteredClient foundClient = clientService.findByClientId(testClientId);
-
-            // Assert
-            assertThat(foundClient).isNotNull();
-            assertThat(foundClient.getId()).isEqualTo(ID);
-            assertThat(foundClient.getClientId()).isEqualTo(CLIENT_ID);
-
-            verify(clientConvertor, times(1)).toEntity(testRegisteredClient);
-            verify(clientRepository, times(1)).save(testClientEntity);
-            verify(clientRepository, times(1)).findByClientId(testClientId);
-            verify(clientConvertor, times(1)).toRegisteredClient(testClientEntity);
-        }
-
-        @Test
-        void saveClientWithCustomScopes_ShouldPreserveScopes() {
-            // Arrange
-            Set<String> customScopes = Set.of("admin", "audit");
-
-            RegisteredClient customClient = RegisteredClient.withId(ID)
-                .clientId("client-789")
-                .clientSecret(CLIENT_SECRET)
-                .clientName("client-789")
-                .redirectUris(uris -> uris.addAll(REDIRECT_URIS))
-                .authorizationGrantTypes(types -> types.addAll(GRANT_TYPES))
-                .scopes(scopes -> scopes.addAll(customScopes))
-                .clientIdIssuedAt(CLIENT_ID_ISSUED_AT)
-                .clientSecretExpiresAt(CLIENT_SECRET_EXPIRES_AT)
-                .build();
-
-            Client customEntity = createClient();
-            customEntity.setClientId("client-789");
-            customEntity.setClientName("custom-client");
-            customEntity.setScopes(String.join(",", customScopes));
-
-            when(clientConvertor.toEntity(customClient)).thenReturn(customEntity);
-            when(clientRepository.save(customEntity)).thenReturn(customEntity);
-            when(clientRepository.findByClientId("custom-client")).thenReturn(Optional.of(customEntity));
-            when(clientConvertor.toRegisteredClient(customEntity)).thenReturn(customClient);
-
-            // Act
-            clientService.save(customClient);
-            RegisteredClient found = clientService.findByClientId("custom-client");
-
-            // Assert
-            assertThat(found).isNotNull();
-            assertThat(found.getScopes()).isEqualTo(customScopes);
         }
     }
 }

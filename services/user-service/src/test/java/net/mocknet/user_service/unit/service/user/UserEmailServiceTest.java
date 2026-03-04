@@ -1,6 +1,5 @@
-package unit.service.user;
+package net.mocknet.user_service.unit.service.user;
 
-import common.TestEmailTokenFactory;
 import net.mocknet.user_service.config.EmailVerificationConfig;
 import net.mocknet.user_service.infrastructure.user.UserEventProducer;
 import net.mocknet.user_service.model.email.EmailToken;
@@ -20,8 +19,8 @@ import java.time.OffsetDateTime;
 import java.util.Locale;
 import java.util.UUID;
 
-import static common.TestEmailTokenFactory.createEmailToken;
-import static common.TestUserFactory.createUser;
+import static net.mocknet.user_service.common.factory.TestEmailTokenFactory.createEmailToken;
+import static net.mocknet.user_service.common.factory.TestUserFactory.createUser;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,8 +38,8 @@ class UserEmailServiceTest {
     @InjectMocks
     private UserEmailService userEmailService;
 
-    private User testUser;
-    private EmailToken testVerificationToken;
+    private User unverifiedUser;
+    private EmailToken unverifiedUserToken;
     private UUID testTokenUuid;
     private OffsetDateTime testExpiresAt;
     private Locale testLocale;
@@ -48,39 +47,38 @@ class UserEmailServiceTest {
 
     @BeforeEach
     void setUp() {
-        testUser = createUser();
-        testUser.setVerified(false);
+        unverifiedUser = createUser();
+        unverifiedUser.setVerified(false);
+        unverifiedUserToken = createEmailToken(unverifiedUser);
 
-        testTokenUuid = TestEmailTokenFactory.TOKEN;
-        testExpiresAt = TestEmailTokenFactory.EXPIRES_AT;
+        testTokenUuid = unverifiedUserToken.getToken();
+        testExpiresAt = unverifiedUserToken.getExpiresAt();
         testLocale = Locale.US;
         testLocaleString = testLocale.toString();
-
-        testVerificationToken = createEmailToken();
     }
 
     @Test
     void verifyEmail_Success_ShouldInvalidateOldTokensAndCreateNewAndPublishEvent() {
         // Arrange
         when(emailVerificationConfig.getDefaultLocale()).thenReturn(testLocale);
-        when(emailTokenService.createVerificationToken(testUser)).thenReturn(testVerificationToken);
+        when(emailTokenService.createVerificationToken(unverifiedUser)).thenReturn(unverifiedUserToken);
 
         // Act
-        userEmailService.verifyEmail(testUser);
+        userEmailService.verifyEmail(unverifiedUser);
 
         // Assert
         // Verify that old tokens are invalidated
         verify(emailTokenService, times(1))
-            .invalidateByUserAndType(testUser, EmailTokenType.VERIFICATION);
+            .invalidateByUserAndType(unverifiedUser, EmailTokenType.VERIFICATION);
 
         // Verify that new token is created
         verify(emailTokenService, times(1))
-            .createVerificationToken(testUser);
+            .createVerificationToken(unverifiedUser);
 
         // Verify that event is published with correct parameters
         verify(userEventProducer, times(1))
             .publishSendEmailVerification(
-                eq(testUser),
+                eq(unverifiedUser),
                 eq(testTokenUuid.toString()),
                 eq(testExpiresAt),
                 eq(testLocaleString)
@@ -91,18 +89,18 @@ class UserEmailServiceTest {
     void verifyEmail_ShouldInvalidateOldTokensBeforeCreatingNewOne() {
         // Arrange
         when(emailVerificationConfig.getDefaultLocale()).thenReturn(testLocale);
-        when(emailTokenService.createVerificationToken(testUser)).thenReturn(testVerificationToken);
+        when(emailTokenService.createVerificationToken(unverifiedUser)).thenReturn(unverifiedUserToken);
 
         // Act
-        userEmailService.verifyEmail(testUser);
+        userEmailService.verifyEmail(unverifiedUser);
 
         // Assert - verify order of operations
         InOrder inOrder = inOrder(emailTokenService, userEventProducer);
 
-        inOrder.verify(emailTokenService).invalidateByUserAndType(testUser, EmailTokenType.VERIFICATION);
-        inOrder.verify(emailTokenService).createVerificationToken(testUser);
+        inOrder.verify(emailTokenService).invalidateByUserAndType(unverifiedUser, EmailTokenType.VERIFICATION);
+        inOrder.verify(emailTokenService).createVerificationToken(unverifiedUser);
         inOrder.verify(userEventProducer).publishSendEmailVerification(
-            eq(testUser),
+            eq(unverifiedUser),
             eq(testTokenUuid.toString()),
             eq(testExpiresAt),
             eq(testLocaleString)
@@ -114,14 +112,14 @@ class UserEmailServiceTest {
         // Arrange
         Locale customLocale = Locale.GERMANY;
         when(emailVerificationConfig.getDefaultLocale()).thenReturn(customLocale);
-        when(emailTokenService.createVerificationToken(testUser)).thenReturn(testVerificationToken);
+        when(emailTokenService.createVerificationToken(unverifiedUser)).thenReturn(unverifiedUserToken);
 
         // Act
-        userEmailService.verifyEmail(testUser);
+        userEmailService.verifyEmail(unverifiedUser);
 
         // Assert
         verify(userEventProducer).publishSendEmailVerification(
-            eq(testUser),
+            eq(unverifiedUser),
             eq(testTokenUuid.toString()),
             eq(testExpiresAt),
             eq(customLocale.toString())
@@ -134,19 +132,19 @@ class UserEmailServiceTest {
         UUID expectedTokenUuid = UUID.randomUUID();
         OffsetDateTime expectedExpiresAt = OffsetDateTime.now().plusHours(48);
 
-        EmailToken customToken = createEmailToken();
+        EmailToken customToken = createEmailToken(createUser());
         customToken.setToken(expectedTokenUuid);
         customToken.setExpiresAt(expectedExpiresAt);
 
         when(emailVerificationConfig.getDefaultLocale()).thenReturn(testLocale);
-        when(emailTokenService.createVerificationToken(testUser)).thenReturn(customToken);
+        when(emailTokenService.createVerificationToken(unverifiedUser)).thenReturn(customToken);
 
         // Act
-        userEmailService.verifyEmail(testUser);
+        userEmailService.verifyEmail(unverifiedUser);
 
         // Assert
         verify(userEventProducer).publishSendEmailVerification(
-            eq(testUser),
+            eq(unverifiedUser),
             eq(expectedTokenUuid.toString()),
             eq(expectedExpiresAt),
             eq(testLocale.toString())
@@ -157,22 +155,22 @@ class UserEmailServiceTest {
     void verifyEmail_WhenCalledMultipleTimes_ShouldInvalidatePreviousTokensEachTime() {
         // Arrange
         when(emailVerificationConfig.getDefaultLocale()).thenReturn(testLocale);
-        when(emailTokenService.createVerificationToken(testUser))
-            .thenReturn(testVerificationToken)
-            .thenReturn(testVerificationToken);
+        when(emailTokenService.createVerificationToken(unverifiedUser))
+            .thenReturn(unverifiedUserToken)
+            .thenReturn(unverifiedUserToken);
 
         // Act
-        userEmailService.verifyEmail(testUser);
-        userEmailService.verifyEmail(testUser);
+        userEmailService.verifyEmail(unverifiedUser);
+        userEmailService.verifyEmail(unverifiedUser);
 
         // Assert
         verify(emailTokenService, times(2))
-            .invalidateByUserAndType(testUser, EmailTokenType.VERIFICATION);
+            .invalidateByUserAndType(unverifiedUser, EmailTokenType.VERIFICATION);
         verify(emailTokenService, times(2))
-            .createVerificationToken(testUser);
+            .createVerificationToken(unverifiedUser);
         verify(userEventProducer, times(2))
             .publishSendEmailVerification(
-                eq(testUser),
+                eq(unverifiedUser),
                 eq(testTokenUuid.toString()),
                 eq(testExpiresAt),
                 eq(testLocale.toString())

@@ -1,4 +1,4 @@
---V1__init_schema.sql
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE roles
 (

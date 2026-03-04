@@ -1,6 +1,5 @@
-package unit.service.email;
+package net.mocknet.user_service.unit.service.email;
 
-import common.TestEmailTokenFactory;
 import net.mocknet.user_service.config.EmailVerificationConfig;
 import net.mocknet.user_service.exception.domain.auth.TokenAlreadyUsedException;
 import net.mocknet.user_service.exception.domain.auth.TokenExpiredException;
@@ -25,8 +24,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static common.TestEmailTokenFactory.createEmailToken;
-import static common.TestUserFactory.createUser;
+import static net.mocknet.user_service.common.factory.TestEmailTokenFactory.createEmailToken;
+import static net.mocknet.user_service.common.factory.TestUserFactory.createUser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.BDDAssertions.within;
@@ -47,23 +46,14 @@ class EmailTokenServiceTest {
     private User testUser;
     private EmailToken testToken;
     private UUID testTokenUuid;
-    private EmailTokenType testTokenType;
-    private OffsetDateTime testExpiresAt;
     private int tokenTtlHours;
 
     @BeforeEach
     void setUp() {
         testUser = createUser();
-        testTokenUuid = TestEmailTokenFactory.TOKEN;
-        testTokenType = EmailTokenType.VERIFICATION;
-        testExpiresAt = TestEmailTokenFactory.EXPIRES_AT;
+        testToken = createEmailToken(testUser);
+        testTokenUuid = testToken.getToken();
         tokenTtlHours = 24;
-
-        testToken = createEmailToken();
-        testToken.setToken(testTokenUuid);
-        testToken.setType(testTokenType);
-        testToken.setExpiresAt(testExpiresAt);
-        testToken.setUsedAt(null);
     }
 
     @Nested
@@ -267,9 +257,9 @@ class EmailTokenServiceTest {
         void invalidateByUserAndType_WhenTokensExist_ShouldMarkAllAsUsed() {
             // Arrange
             List<EmailToken> tokens = List.of(
-                createEmailToken(),
-                createEmailToken(),
-                createEmailToken()
+                createEmailToken(createUser()),
+                createEmailToken(createUser()),
+                createEmailToken(createUser())
             );
             
             tokens.forEach(t -> {
@@ -317,10 +307,10 @@ class EmailTokenServiceTest {
             // Arrange
             OffsetDateTime oldUsedAt = OffsetDateTime.now().minusDays(1);
             
-            EmailToken usedToken = createEmailToken();
+            EmailToken usedToken = createEmailToken(createUser());
             usedToken.setUsedAt(oldUsedAt);
             
-            EmailToken unusedToken = createEmailToken();
+            EmailToken unusedToken = createEmailToken(createUser());
             unusedToken.setUsedAt(null);
             
             List<EmailToken> tokens = List.of(usedToken, unusedToken);
@@ -344,11 +334,11 @@ class EmailTokenServiceTest {
         @Test
         void invalidateByUserAndType_ShouldOnlyInvalidateTokensOfSpecifiedType() {
             // Arrange
-            EmailToken verificationToken = createEmailToken();
+            EmailToken verificationToken = createEmailToken(createUser());
             verificationToken.setType(EmailTokenType.VERIFICATION);
             verificationToken.setUsedAt(null);
             
-            EmailToken otherTypeToken = createEmailToken();
+            EmailToken otherTypeToken = createEmailToken(createUser());
             otherTypeToken.setType(EmailTokenType.VERIFICATION); // В данном случае только один тип
             otherTypeToken.setUsedAt(null);
 
@@ -371,9 +361,9 @@ class EmailTokenServiceTest {
         void deleteAllByUser_WhenTokensExist_ShouldDeleteAllTokens() {
             // Arrange
             List<EmailToken> tokens = List.of(
-                createEmailToken(),
-                createEmailToken(),
-                createEmailToken()
+                createEmailToken(createUser()),
+                createEmailToken(createUser()),
+                createEmailToken(createUser())
             );
             
             when(emailTokenRepository.findAllByUser(testUser))
@@ -405,10 +395,10 @@ class EmailTokenServiceTest {
         void deleteAllByUser_WhenUserHasMultipleTokens_ShouldDeleteAllOfThem() {
             // Arrange
             List<EmailToken> tokens = List.of(
-                createEmailToken(),
-                createEmailToken(),
-                createEmailToken(),
-                createEmailToken()
+                createEmailToken(createUser()),
+                createEmailToken(createUser()),
+                createEmailToken(createUser()),
+                createEmailToken(createUser())
             );
             
             when(emailTokenRepository.findAllByUser(testUser))
@@ -488,8 +478,8 @@ class EmailTokenServiceTest {
         void invalidateByUserAndType_ThenCreateNew_ShouldWorkCorrectly() {
             // Arrange
             List<EmailToken> oldTokens = List.of(
-                createEmailToken(),
-                createEmailToken()
+                createEmailToken(createUser()),
+                createEmailToken(createUser())
             );
             
             when(emailTokenRepository.findAllByUserAndType(testUser, EmailTokenType.VERIFICATION))

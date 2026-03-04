@@ -4,11 +4,12 @@ import lombok.RequiredArgsConstructor;
 import net.mocknet.user_service.dto.ProfileDto;
 import net.mocknet.user_service.dto.RegisterRequestDto;
 import net.mocknet.user_service.dto.RegisterResponseDto;
-import net.mocknet.user_service.dto.UpdateProfileDto;
+import net.mocknet.user_service.dto.UpdateProfileRequest;
 import net.mocknet.user_service.exception.domain.auth.EmailAlreadyExistsException;
 import net.mocknet.user_service.exception.domain.auth.LoginAlreadyExistsException;
 import net.mocknet.user_service.exception.domain.role.RoleNotFoundException;
 import net.mocknet.user_service.exception.domain.user.UserNotFound;
+import net.mocknet.user_service.exception.domain.user.UserUpdateForbidden;
 import net.mocknet.user_service.infrastructure.user.UserEventProducer;
 import net.mocknet.user_service.mapper.UserMapper;
 import net.mocknet.user_service.model.email.EmailToken;
@@ -115,8 +116,11 @@ public class UserService {
     }
 
     @Transactional
-    public ProfileDto updateProfile(UUID id, UpdateProfileDto request) {
-        User user = getUser(id);
+    public ProfileDto updateProfile(UUID userId, UpdateProfileRequest request, UUID ownerId) {
+        if (!Objects.equals(userId, ownerId))
+            throw new UserUpdateForbidden(userId);
+
+        User user = getUser(userId);
 
         if (request.getLogin() != null && !Objects.equals(request.getLogin(), user.getLogin())) {
             if (userRepository.existsByLogin(request.getLogin()))

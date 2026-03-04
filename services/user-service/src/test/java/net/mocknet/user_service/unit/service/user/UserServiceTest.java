@@ -1,14 +1,14 @@
-package unit.service.user;
+package net.mocknet.user_service.unit.service.user;
 
-import common.TestEmailTokenFactory;
 import net.mocknet.user_service.dto.ProfileDto;
 import net.mocknet.user_service.dto.RegisterRequestDto;
 import net.mocknet.user_service.dto.RegisterResponseDto;
-import net.mocknet.user_service.dto.UpdateProfileDto;
+import net.mocknet.user_service.dto.UpdateProfileRequest;
 import net.mocknet.user_service.exception.domain.auth.EmailAlreadyExistsException;
 import net.mocknet.user_service.exception.domain.auth.LoginAlreadyExistsException;
 import net.mocknet.user_service.exception.domain.role.RoleNotFoundException;
 import net.mocknet.user_service.exception.domain.user.UserNotFound;
+import net.mocknet.user_service.exception.domain.user.UserUpdateForbidden;
 import net.mocknet.user_service.infrastructure.user.UserEventProducer;
 import net.mocknet.user_service.mapper.UserMapper;
 import net.mocknet.user_service.model.email.EmailToken;
@@ -35,8 +35,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
-import static common.TestEmailTokenFactory.createEmailToken;
-import static common.TestUserFactory.createUser;
+import static net.mocknet.user_service.common.factory.TestEmailTokenFactory.createEmailToken;
+import static net.mocknet.user_service.common.factory.TestUserFactory.createUser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
@@ -68,22 +68,18 @@ class UserServiceTest {
     @InjectMocks
     private UserService userService;
 
-    private User testUser;
-    private UUID testUserId;
+    private User activeUser;
     private RegisterRequestDto registerRequest;
-    private UpdateProfileDto updateProfileRequest;
+    private UpdateProfileRequest updateProfileRequest;
     private ProfileDto profileDto;
     private RegisterResponseDto registerResponseDto;
     private Role userRole;
     private EmailToken testEmailToken;
-    private UUID testTokenUuid;
 
     @BeforeEach
     void setUp() {
-        testUser = createUser();
-        testUser.setVerified(true); // По умолчанию пользователь верифицирован
-        testUserId = testUser.getId();
-        testTokenUuid = TestEmailTokenFactory.TOKEN;
+        activeUser = createUser();
+        activeUser.setVerified(true); // По умолчанию пользователь верифицирован
         
         userRole = Role.builder()
             .name(RoleName.ROLE_USER)
@@ -96,7 +92,7 @@ class UserServiceTest {
         registerRequest.setFirstName("Jane");
         registerRequest.setLastName("Smith");
 
-        updateProfileRequest = new UpdateProfileDto();
+        updateProfileRequest = new UpdateProfileRequest();
         updateProfileRequest.setLogin("updatedlogin");
         updateProfileRequest.setEmail("updated@example.com");
         updateProfileRequest.setFirstName("Updated");
@@ -104,15 +100,15 @@ class UserServiceTest {
         updateProfileRequest.setAvatarUrl("https://example.com/new-avatar.jpg");
 
         profileDto = new ProfileDto();
-        profileDto.setId(testUserId);
-        profileDto.setLogin(testUser.getLogin());
-        profileDto.setEmail(testUser.getEmail());
+        profileDto.setId(activeUser.getId());
+        profileDto.setLogin(activeUser.getLogin());
+        profileDto.setEmail(activeUser.getEmail());
 
         registerResponseDto = RegisterResponseDto.builder()
-            .id(testUserId)
+            .id(activeUser.getId())
             .build();
 
-        testEmailToken = createEmailToken();
+        testEmailToken = createEmailToken(activeUser);
     }
 
     @Nested
@@ -121,27 +117,27 @@ class UserServiceTest {
         @Test
         void getUser_WhenUserExists_ShouldReturnUser() {
             // Arrange
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
+            when(userRepository.findById(activeUser.getId())).thenReturn(Optional.of(activeUser));
 
             // Act
-            User result = userService.getUser(testUserId);
+            User result = userService.getUser(activeUser.getId());
 
             // Assert
             assertThat(result).isNotNull();
-            assertThat(result.getId()).isEqualTo(testUserId);
-            verify(userRepository, times(1)).findById(testUserId);
+            assertThat(result.getId()).isEqualTo(activeUser.getId());
+            verify(userRepository, times(1)).findById(activeUser.getId());
         }
 
         @Test
         void getUser_WhenUserNotFound_ShouldThrowUserNotFound() {
             // Arrange
-            when(userRepository.findById(testUserId)).thenReturn(Optional.empty());
+            when(userRepository.findById(activeUser.getId())).thenReturn(Optional.empty());
 
             // Act & Assert
-            assertThatThrownBy(() -> userService.getUser(testUserId))
+            assertThatThrownBy(() -> userService.getUser(activeUser.getId()))
                 .isInstanceOf(UserNotFound.class);
 
-            verify(userRepository, times(1)).findById(testUserId);
+            verify(userRepository, times(1)).findById(activeUser.getId());
         }
     }
 
@@ -151,26 +147,26 @@ class UserServiceTest {
         @Test
         void getProfile_WhenUserExists_ShouldReturnProfileDto() {
             // Arrange
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
-            when(userMapper.toProfileDto(testUser)).thenReturn(profileDto);
+            when(userRepository.findById(activeUser.getId())).thenReturn(Optional.of(activeUser));
+            when(userMapper.toProfileDto(activeUser)).thenReturn(profileDto);
 
             // Act
-            ProfileDto result = userService.getProfile(testUserId);
+            ProfileDto result = userService.getProfile(activeUser.getId());
 
             // Assert
             assertThat(result).isNotNull();
-            assertThat(result.getId()).isEqualTo(testUserId);
-            verify(userRepository, times(1)).findById(testUserId);
-            verify(userMapper, times(1)).toProfileDto(testUser);
+            assertThat(result.getId()).isEqualTo(activeUser.getId());
+            verify(userRepository, times(1)).findById(activeUser.getId());
+            verify(userMapper, times(1)).toProfileDto(activeUser);
         }
 
         @Test
         void getProfile_WhenUserNotFound_ShouldThrowUserNotFound() {
             // Arrange
-            when(userRepository.findById(testUserId)).thenReturn(Optional.empty());
+            when(userRepository.findById(activeUser.getId())).thenReturn(Optional.empty());
 
             // Act & Assert
-            assertThatThrownBy(() -> userService.getProfile(testUserId))
+            assertThatThrownBy(() -> userService.getProfile(activeUser.getId()))
                 .isInstanceOf(UserNotFound.class);
         }
     }
@@ -186,25 +182,25 @@ class UserServiceTest {
             when(userRepository.findByLogin(registerRequest.getLogin())).thenReturn(Optional.empty());
             when(roleRepository.findByName(RoleName.ROLE_USER)).thenReturn(Optional.of(userRole));
             when(passwordEncoder.encode(registerRequest.getPassword())).thenReturn(encodedPassword);
-            when(userMapper.toEntity(registerRequest, encodedPassword)).thenReturn(testUser);
-            when(userRepository.save(any(User.class))).thenReturn(testUser);
-            when(userMapper.toRegisterResponseDto(testUser)).thenReturn(registerResponseDto);
+            when(userMapper.toEntity(registerRequest, encodedPassword)).thenReturn(activeUser);
+            when(userRepository.save(any(User.class))).thenReturn(activeUser);
+            when(userMapper.toRegisterResponseDto(activeUser)).thenReturn(registerResponseDto);
 
             // Act
             RegisterResponseDto result = userService.register(registerRequest);
 
             // Assert
             assertThat(result).isNotNull();
-            assertThat(result.getId()).isEqualTo(testUserId);
+            assertThat(result.getId()).isEqualTo(activeUser.getId());
 
             verify(userRepository).findByEmail(registerRequest.getEmail());
             verify(userRepository).findByLogin(registerRequest.getLogin());
             verify(roleRepository).findByName(RoleName.ROLE_USER);
             verify(passwordEncoder).encode(registerRequest.getPassword());
             verify(userMapper).toEntity(registerRequest, encodedPassword);
-            verify(userRepository).save(testUser);
-            verify(userEmailService).verifyEmail(testUser);
-            verify(userEventProducer).publishUserRegistered(testUser);
+            verify(userRepository).save(activeUser);
+            verify(userEmailService).verifyEmail(activeUser);
+            verify(userEventProducer).publishUserRegistered(activeUser);
         }
 
         @Test
@@ -343,37 +339,37 @@ class UserServiceTest {
         @Test
         void acceptVerification_WithValidToken_ShouldVerifyUser() {
             // Arrange
-            testUser.setVerified(false);
-            testEmailToken.setUser(testUser);
+            activeUser.setVerified(false);
+            testEmailToken.setUser(activeUser);
             
-            when(emailTokenService.getValidToken(testTokenUuid)).thenReturn(testEmailToken);
-            when(userRepository.save(testUser)).thenReturn(testUser);
+            when(emailTokenService.getValidToken(testEmailToken.getToken())).thenReturn(testEmailToken);
+            when(userRepository.save(activeUser)).thenReturn(activeUser);
 
             // Act
-            userService.acceptVerification(testTokenUuid);
+            userService.acceptVerification(testEmailToken.getToken());
 
             // Assert
             InOrder inOrder = inOrder(emailTokenService, userRepository);
             
-            inOrder.verify(emailTokenService).getValidToken(testTokenUuid);
+            inOrder.verify(emailTokenService).getValidToken(testEmailToken.getToken());
             inOrder.verify(emailTokenService).markAsUsed(testEmailToken);
-            inOrder.verify(userRepository).save(testUser);
+            inOrder.verify(userRepository).save(activeUser);
             
-            assertThat(testUser.isVerified()).isTrue();
+            assertThat(activeUser.isVerified()).isTrue();
         }
 
         @Test
         void acceptVerification_WhenTokenInvalid_ShouldPropagateException() {
             // Arrange
-            when(emailTokenService.getValidToken(testTokenUuid))
+            when(emailTokenService.getValidToken(testEmailToken.getToken()))
                 .thenThrow(new RuntimeException("Invalid token"));
 
             // Act & Assert
-            assertThatThrownBy(() -> userService.acceptVerification(testTokenUuid))
+            assertThatThrownBy(() -> userService.acceptVerification(testEmailToken.getToken()))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Invalid token");
 
-            verify(emailTokenService).getValidToken(testTokenUuid);
+            verify(emailTokenService).getValidToken(testEmailToken.getToken());
             verify(emailTokenService, never()).markAsUsed(any());
             verify(userRepository, never()).save(any());
         }
@@ -386,44 +382,44 @@ class UserServiceTest {
         void updateProfile_WithAllFieldsChanged_ShouldUpdateAllFields() {
             // Arrange
             // Сбрасываем verified в true перед тестом, так как в setUp он true
-            testUser.setVerified(true);
+            activeUser.setVerified(true);
             
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
+            when(userRepository.findById(activeUser.getId())).thenReturn(Optional.of(activeUser));
             when(userRepository.existsByLogin(updateProfileRequest.getLogin())).thenReturn(false);
-            when(userRepository.save(testUser)).thenReturn(testUser);
-            when(userMapper.toProfileDto(testUser)).thenReturn(profileDto);
+            when(userRepository.save(activeUser)).thenReturn(activeUser);
+            when(userMapper.toProfileDto(activeUser)).thenReturn(profileDto);
 
             // Act
-            ProfileDto result = userService.updateProfile(testUserId, updateProfileRequest);
+            ProfileDto result = userService.updateProfile(activeUser.getId(), updateProfileRequest, activeUser.getId());
 
             // Assert
             assertThat(result).isNotNull();
             
-            assertThat(testUser.getLogin()).isEqualTo(updateProfileRequest.getLogin());
-            assertThat(testUser.getEmail()).isEqualTo(updateProfileRequest.getEmail());
-            assertThat(testUser.isVerified()).isFalse(); // Должен стать false после смены email
-            assertThat(testUser.getFirstName()).isEqualTo(updateProfileRequest.getFirstName());
-            assertThat(testUser.getLastName()).isEqualTo(updateProfileRequest.getLastName());
-            assertThat(testUser.getAvatarUrl()).isEqualTo(updateProfileRequest.getAvatarUrl());
+            assertThat(activeUser.getLogin()).isEqualTo(updateProfileRequest.getLogin());
+            assertThat(activeUser.getEmail()).isEqualTo(updateProfileRequest.getEmail());
+            assertThat(activeUser.isVerified()).isFalse(); // Должен стать false после смены email
+            assertThat(activeUser.getFirstName()).isEqualTo(updateProfileRequest.getFirstName());
+            assertThat(activeUser.getLastName()).isEqualTo(updateProfileRequest.getLastName());
+            assertThat(activeUser.getAvatarUrl()).isEqualTo(updateProfileRequest.getAvatarUrl());
             
-            verify(userRepository).findById(testUserId);
+            verify(userRepository).findById(activeUser.getId());
             verify(userRepository).existsByLogin(updateProfileRequest.getLogin());
-            verify(userEmailService).verifyEmail(testUser);
-            verify(userRepository).save(testUser);
-            verify(userMapper).toProfileDto(testUser);
+            verify(userEmailService).verifyEmail(activeUser);
+            verify(userRepository).save(activeUser);
+            verify(userMapper).toProfileDto(activeUser);
         }
 
         @Test
         void updateProfile_WhenLoginExists_ShouldThrowLoginAlreadyExistsException() {
             // Arrange
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
+            when(userRepository.findById(activeUser.getId())).thenReturn(Optional.of(activeUser));
             when(userRepository.existsByLogin(updateProfileRequest.getLogin())).thenReturn(true);
 
             // Act & Assert
-            assertThatThrownBy(() -> userService.updateProfile(testUserId, updateProfileRequest))
+            assertThatThrownBy(() -> userService.updateProfile(activeUser.getId(), updateProfileRequest, activeUser.getId()))
                 .isInstanceOf(LoginAlreadyExistsException.class);
 
-            verify(userRepository).findById(testUserId);
+            verify(userRepository).findById(activeUser.getId());
             verify(userRepository).existsByLogin(updateProfileRequest.getLogin());
             verify(userRepository, never()).save(any());
             verify(userEmailService, never()).verifyEmail(any());
@@ -432,84 +428,91 @@ class UserServiceTest {
         @Test
         void updateProfile_WhenOnlyFirstNameChanged_ShouldUpdateOnlyFirstName() {
             // Arrange
-            UpdateProfileDto request = new UpdateProfileDto();
+            UpdateProfileRequest request = new UpdateProfileRequest();
             request.setFirstName("NewFirstName");
             
-            String originalLogin = testUser.getLogin();
-            String originalEmail = testUser.getEmail();
-            String originalLastName = testUser.getLastName();
-            String originalAvatarUrl = testUser.getAvatarUrl();
-            boolean originalVerified = testUser.isVerified();
+            String originalLogin = activeUser.getLogin();
+            String originalEmail = activeUser.getEmail();
+            String originalLastName = activeUser.getLastName();
+            String originalAvatarUrl = activeUser.getAvatarUrl();
+            boolean originalVerified = activeUser.isVerified();
             
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
-            when(userRepository.save(testUser)).thenReturn(testUser);
-            when(userMapper.toProfileDto(testUser)).thenReturn(profileDto);
+            when(userRepository.findById(activeUser.getId())).thenReturn(Optional.of(activeUser));
+            when(userRepository.save(activeUser)).thenReturn(activeUser);
+            when(userMapper.toProfileDto(activeUser)).thenReturn(profileDto);
 
             // Act
-            ProfileDto result = userService.updateProfile(testUserId, request);
+            ProfileDto result = userService.updateProfile(activeUser.getId(), request, activeUser.getId());
 
             // Assert
-            assertThat(testUser.getLogin()).isEqualTo(originalLogin);
-            assertThat(testUser.getEmail()).isEqualTo(originalEmail);
-            assertThat(testUser.getFirstName()).isEqualTo("NewFirstName");
-            assertThat(testUser.getLastName()).isEqualTo(originalLastName);
-            assertThat(testUser.getAvatarUrl()).isEqualTo(originalAvatarUrl);
-            assertThat(testUser.isVerified()).isEqualTo(originalVerified); // verified не должен измениться
+            assertThat(activeUser.getLogin()).isEqualTo(originalLogin);
+            assertThat(activeUser.getEmail()).isEqualTo(originalEmail);
+            assertThat(activeUser.getFirstName()).isEqualTo("NewFirstName");
+            assertThat(activeUser.getLastName()).isEqualTo(originalLastName);
+            assertThat(activeUser.getAvatarUrl()).isEqualTo(originalAvatarUrl);
+            assertThat(activeUser.isVerified()).isEqualTo(originalVerified); // verified не должен измениться
             
             verify(userRepository, never()).existsByLogin(any());
             verify(userEmailService, never()).verifyEmail(any());
-            verify(userRepository).save(testUser);
+            verify(userRepository).save(activeUser);
         }
 
         @Test
         void updateProfile_WhenEmailChanged_ShouldSetVerifiedFalseAndSendVerification() {
             // Arrange
-            UpdateProfileDto request = new UpdateProfileDto();
+            UpdateProfileRequest request = new UpdateProfileRequest();
             request.setEmail("newemail@example.com");
             
-            testUser.setVerified(true);
+            activeUser.setVerified(true);
             
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
-            when(userRepository.save(testUser)).thenReturn(testUser);
-            when(userMapper.toProfileDto(testUser)).thenReturn(profileDto);
+            when(userRepository.findById(activeUser.getId())).thenReturn(Optional.of(activeUser));
+            when(userRepository.save(activeUser)).thenReturn(activeUser);
+            when(userMapper.toProfileDto(activeUser)).thenReturn(profileDto);
 
             // Act
-            ProfileDto result = userService.updateProfile(testUserId, request);
+            ProfileDto result = userService.updateProfile(activeUser.getId(), request, activeUser.getId());
 
             // Assert
-            assertThat(testUser.getEmail()).isEqualTo("newemail@example.com");
-            assertThat(testUser.isVerified()).isFalse();
+            assertThat(activeUser.getEmail()).isEqualTo("newemail@example.com");
+            assertThat(activeUser.isVerified()).isFalse();
             
-            verify(userEmailService).verifyEmail(testUser);
-            verify(userRepository).save(testUser);
+            verify(userEmailService).verifyEmail(activeUser);
+            verify(userRepository).save(activeUser);
         }
 
         @Test
         void updateProfile_WhenLoginChangedToSameValue_ShouldNotCheckExistence() {
             // Arrange
-            UpdateProfileDto request = new UpdateProfileDto();
-            request.setLogin(testUser.getLogin()); // Тот же логин
+            UpdateProfileRequest request = new UpdateProfileRequest();
+            request.setLogin(activeUser.getLogin()); // Тот же логин
             
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
-            when(userRepository.save(testUser)).thenReturn(testUser);
-            when(userMapper.toProfileDto(testUser)).thenReturn(profileDto);
+            when(userRepository.findById(activeUser.getId())).thenReturn(Optional.of(activeUser));
+            when(userRepository.save(activeUser)).thenReturn(activeUser);
+            when(userMapper.toProfileDto(activeUser)).thenReturn(profileDto);
 
             // Act
-            ProfileDto result = userService.updateProfile(testUserId, request);
+            ProfileDto result = userService.updateProfile(activeUser.getId(), request, activeUser.getId());
 
             // Assert
             verify(userRepository, never()).existsByLogin(any());
-            verify(userRepository).save(testUser);
+            verify(userRepository).save(activeUser);
         }
 
         @Test
         void updateProfile_WhenUserNotFound_ShouldThrowUserNotFound() {
             // Arrange
-            when(userRepository.findById(testUserId)).thenReturn(Optional.empty());
+            when(userRepository.findById(activeUser.getId())).thenReturn(Optional.empty());
 
             // Act & Assert
-            assertThatThrownBy(() -> userService.updateProfile(testUserId, updateProfileRequest))
+            assertThatThrownBy(() -> userService.updateProfile(activeUser.getId(), updateProfileRequest, activeUser.getId()))
                 .isInstanceOf(UserNotFound.class);
+        }
+
+        @Test
+        void updateProfile_WhenUpdaterIsNotTheUser_ShouldThrowUserConflict() {
+            UUID someUserId = UUID.randomUUID();
+            assertThatThrownBy(() -> userService.updateProfile(activeUser.getId(), updateProfileRequest, someUserId))
+                .isInstanceOf(UserUpdateForbidden.class);
         }
     }
 
@@ -520,55 +523,55 @@ class UserServiceTest {
         void updateLastLogin_WithValidTime_ShouldUpdateLastLogin() {
             // Arrange
             OffsetDateTime lastLoginAt = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
+            when(userRepository.findById(activeUser.getId())).thenReturn(Optional.of(activeUser));
 
             // Act
-            userService.updateLastLogin(testUserId, lastLoginAt);
+            userService.updateLastLogin(activeUser.getId(), lastLoginAt);
 
             // Assert
-            assertThat(testUser.getLastLoginAt()).isEqualTo(lastLoginAt);
-            verify(userRepository).findById(testUserId);
+            assertThat(activeUser.getLastLoginAt()).isEqualTo(lastLoginAt);
+            verify(userRepository).findById(activeUser.getId());
         }
 
         @Test
         void updateLastLogin_WhenNewTimeIsBeforeExisting_ShouldThrowIllegalArgumentException() {
             // Arrange
             OffsetDateTime existingLoginAt = OffsetDateTime.now();
-            testUser.setLastLoginAt(existingLoginAt);
+            activeUser.setLastLoginAt(existingLoginAt);
             
             OffsetDateTime earlierLoginAt = existingLoginAt.minusHours(1);
             
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
+            when(userRepository.findById(activeUser.getId())).thenReturn(Optional.of(activeUser));
 
             // Act & Assert
-            assertThatThrownBy(() -> userService.updateLastLogin(testUserId, earlierLoginAt))
+            assertThatThrownBy(() -> userService.updateLastLogin(activeUser.getId(), earlierLoginAt))
                 .isInstanceOf(IllegalArgumentException.class);
 
-            assertThat(testUser.getLastLoginAt()).isEqualTo(existingLoginAt);
+            assertThat(activeUser.getLastLoginAt()).isEqualTo(existingLoginAt);
         }
 
         @Test
         void updateLastLogin_WhenLastLoginWasNull_ShouldSetLastLogin() {
             // Arrange
-            testUser.setLastLoginAt(null);
+            activeUser.setLastLoginAt(null);
             OffsetDateTime lastLoginAt = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
             
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
+            when(userRepository.findById(activeUser.getId())).thenReturn(Optional.of(activeUser));
 
             // Act
-            userService.updateLastLogin(testUserId, lastLoginAt);
+            userService.updateLastLogin(activeUser.getId(), lastLoginAt);
 
             // Assert
-            assertThat(testUser.getLastLoginAt()).isEqualTo(lastLoginAt);
+            assertThat(activeUser.getLastLoginAt()).isEqualTo(lastLoginAt);
         }
 
         @Test
         void updateLastLogin_WhenUserNotFound_ShouldThrowUserNotFound() {
             // Arrange
-            when(userRepository.findById(testUserId)).thenReturn(Optional.empty());
+            when(userRepository.findById(activeUser.getId())).thenReturn(Optional.empty());
 
             // Act & Assert
-            assertThatThrownBy(() -> userService.updateLastLogin(testUserId, OffsetDateTime.now()))
+            assertThatThrownBy(() -> userService.updateLastLogin(activeUser.getId(), OffsetDateTime.now()))
                 .isInstanceOf(UserNotFound.class);
         }
     }

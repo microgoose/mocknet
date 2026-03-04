@@ -1,0 +1,35 @@
+logging:
+  level:
+    org.springframework.security: debug
+
+app:
+  clients:
+    test-client:
+      require-authorization-consent: false
+      require-proof-key: false
+      registration:
+        client-id: "test-client"
+        client-secret: "secret"
+        client-authentication-methods:
+          - "client_secret_basic"
+        authorization-grant-types:
+          - "authorization_code"
+          - "client_credentials"
+          - "refresh_token"
+        redirect-uris:
+          - "http://127.0.0.1:9000/"
+        post-logout-redirect-uris:
+          - "http://127.0.0.1:9000/"
+        scopes:
+          - "openid"
+          - "profile"
+
+spring:
+  security:
+    csrf:
+      enabled: false
+
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true

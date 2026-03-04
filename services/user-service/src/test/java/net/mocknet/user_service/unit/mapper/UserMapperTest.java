@@ -1,4 +1,4 @@
-package unit.mapper;
+package net.mocknet.user_service.unit.mapper;
 
 import net.mocknet.user_service.dto.ProfileDto;
 import net.mocknet.user_service.dto.RegisterRequestDto;
@@ -226,7 +226,7 @@ class UserMapperTest {
             assertThat(result.getEmail()).isEqualTo("test@example.com");
             assertThat(result.getFirstName()).isEqualTo("John");
             assertThat(result.getLastName()).isEqualTo("Doe");
-            assertThat(result.isVerified()).isTrue();
+            assertThat(result.getIsVerified()).isTrue();
             assertThat(result.getCreatedAt()).isEqualTo(testCreatedAt);
         }
 
@@ -253,7 +253,7 @@ class UserMapperTest {
             RegisterResponseDto result = userMapper.toRegisterResponseDto(testUser);
 
             // Assert
-            assertThat(result.isVerified()).isFalse();
+            assertThat(result.getIsVerified()).isFalse();
         }
 
         @Test
@@ -286,7 +286,7 @@ class UserMapperTest {
         void toEntityAndToProfileDto_ShouldPreserveData() {
             // Arrange
             RegisterRequestDto request = new RegisterRequestDto();
-            request.setLogin("integration");
+            request.setLogin("net/mocknet/user_service/integration");
             request.setEmail("integration@example.com");
             request.setPassword("password");
             request.setFirstName("Integration");
@@ -309,7 +309,7 @@ class UserMapperTest {
 
             // Assert
             assertThat(profileDto.getId()).isEqualTo(user.getId());
-            assertThat(profileDto.getLogin()).isEqualTo("integration");
+            assertThat(profileDto.getLogin()).isEqualTo("net/mocknet/user_service/integration");
             assertThat(profileDto.getEmail()).isEqualTo("integration@example.com");
             assertThat(profileDto.getFirstName()).isEqualTo("Integration");
             assertThat(profileDto.getLastName()).isEqualTo("Test");
@@ -319,7 +319,7 @@ class UserMapperTest {
         void toEntityAndToRegisterResponseDto_ShouldPreserveData() {
             // Arrange
             RegisterRequestDto request = new RegisterRequestDto();
-            request.setLogin("integration");
+            request.setLogin("net/mocknet/user_service/integration");
             request.setEmail("integration@example.com");
             request.setPassword("password");
             request.setFirstName("Integration");
@@ -342,11 +342,11 @@ class UserMapperTest {
 
             // Assert
             assertThat(responseDto.getId()).isEqualTo(userId);
-            assertThat(responseDto.getLogin()).isEqualTo("integration");
+            assertThat(responseDto.getLogin()).isEqualTo("net/mocknet/user_service/integration");
             assertThat(responseDto.getEmail()).isEqualTo("integration@example.com");
             assertThat(responseDto.getFirstName()).isEqualTo("Integration");
             assertThat(responseDto.getLastName()).isEqualTo("Test");
-            assertThat(responseDto.isVerified()).isTrue();
+            assertThat(responseDto.getIsVerified()).isTrue();
             assertThat(responseDto.getCreatedAt()).isEqualTo(now);
         }
 

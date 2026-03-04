@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.Locale;
 
 @Slf4j
-@Order
+@Order(500)
 @RestControllerAdvice
 @RequiredArgsConstructor
 public class InternalServerErrorHandler {
