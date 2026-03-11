@@ -17,7 +17,7 @@ app:
           - "client_credentials"
           - "refresh_token"
         redirect-uris:
-          - "http://127.0.0.1:9000/"
+          - "http://127.0.0.1:9000/some/specific/path/"
         post-logout-redirect-uris:
           - "http://127.0.0.1:9000/"
         scopes:
@@ -25,11 +25,8 @@ app:
           - "profile"
 
 spring:
-  security:
-    csrf:
-      enabled: false
-
   jpa:
+    show-sql: false
     properties:
       hibernate:
         format_sql: true

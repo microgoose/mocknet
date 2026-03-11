@@ -21,7 +21,7 @@ import static net.mocknet.user_service.common.factory.TestUserFactory.createRegi
 import static net.mocknet.user_service.common.factory.TestUserFactory.createUser;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class RegisterUserIntegrationTest extends AbstractIntegrationTest {
+class RegisterIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;

@@ -1,5 +1,9 @@
 package net.mocknet.user_service.integration.auth;
 
+import static net.mocknet.user_service.common.factory.TestUserFactory.createUser;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import net.mocknet.user_service.common.client.OAuth2TestClient;
 import net.mocknet.user_service.config.client.ClientsProperties;
 import net.mocknet.user_service.integration.AbstractIntegrationTest;
 import net.mocknet.user_service.model.user.User;
@@ -7,16 +11,9 @@ import net.mocknet.user_service.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.client.RestTestClient;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.Map;
-
-import static net.mocknet.user_service.common.factory.TestUserFactory.createUser;
-import static net.mocknet.user_service.common.security.PkceUtils.generateCodeChallengeS256;
-import static net.mocknet.user_service.common.security.PkceUtils.generateCodeVerifier;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class OAuth2AuthorizeIntegrationTest  extends AbstractIntegrationTest {
+public class OAuth2AuthorizeIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
@@ -24,53 +21,108 @@ public class OAuth2AuthorizeIntegrationTest  extends AbstractIntegrationTest {
     @Autowired
     private ClientsProperties clientsProperties;
 
-    private String responseType = "code";
-    private String clientId;
-    private String scope;
-    private String redirectUri;
-    private String codeVerifier;
-    private String codeChallenge;
-    private String codeChallengeMethod = "S256";
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    private OAuth2TestClient oauth2Client;
     private User activeUser;
+    private final String password = "abcd1234";
 
     @BeforeEach
     void beforeEach() {
-        ClientsProperties.ClientProperties clientProperties = this.clientsProperties.getClients().get("test-client");
-        ClientsProperties.ClientProperties.RegistrationProperties registrationProperties = clientProperties.getRegistration();
-        this.clientId = registrationProperties.getClientId();
-        this.scope = String.join(" ", registrationProperties.getScopes());
-        this.redirectUri = registrationProperties.getRedirectUris().get(0);
-
-        this.codeVerifier = generateCodeVerifier();
-        this.codeChallenge = generateCodeChallengeS256(codeVerifier);
+        this.oauth2Client = OAuth2TestClient.forClient(
+            restCli,
+            clientsProperties,
+            "test-client"
+        );
 
         this.activeUser = createUser();
         this.activeUser.setId(null);
+        this.activeUser.setPasswordHash(passwordEncoder.encode(password));
         this.activeUser = userRepository.save(activeUser);
     }
 
     @Test
     void authorizeRequest_shouldRedirectToLogin() {
-        RestTestClient.ResponseSpec response = authRequest();
-        response.expectStatus().is3xxRedirection();
-        String location = response.returnResult()
-            .getResponseHeaders()
-            .getLocation()
-            .toString();
-
-        assertThat(location).contains("/login");
+        oauth2Client
+            .authorize()
+            .expectStatus()
+            .is3xxRedirection()
+            .expectHeader()
+            .value("Location", location -> {
+                assertThat(location).contains("/login");
+                assertThat(location).doesNotContain("error");
+            });
     }
 
-    private RestTestClient.ResponseSpec authRequest() {
-        return restCli.get()
-            .uri("/oauth2/authorize", Map.of(
-                "response_type", responseType,
-                "client_id", clientId,
-                "scope", scope,
-                "redirect_uri", redirectUri,
-                "code_challenge", codeChallenge,
-                "code_challenge_method", codeChallengeMethod
-            ))
-            .exchange();
+    @Test
+    void authorizeRequest_invalidClientId_shouldReturnBadRequest() {
+        OAuth2TestClient.forClient(restCli, clientsProperties, "test-client")
+            .withClientId("non-existent-client-1234")
+            .authorize()
+            .expectStatus()
+            .isBadRequest();
+    }
+
+    @Test
+    void authorizeRequest_missingClientId_shouldReturnBadRequest() {
+        OAuth2TestClient.forClient(restCli, clientsProperties, "test-client")
+            .withClientId("")
+            .authorize()
+            .expectStatus()
+            .isBadRequest();
+    }
+
+    @Test
+    void authorizeRequest_invalidRedirectUri_shouldReturnBadRequest() {
+        oauth2Client
+            .withRedirectUri("non-existent-redirect-uri-1234")
+            .authorize()
+            .expectStatus()
+            .isBadRequest();
+    }
+
+    @Test
+    void authorizeRequest_denyResponseType_shouldReturnBadRequest() {
+        oauth2Client
+            .withResponseType("token")
+            .authorize()
+            .expectStatus()
+            .isBadRequest();
+    }
+
+    @Test
+    void authorizeRequest_shouldRedirectToRedirectUriWithCode() {
+        String jsessionid = oauth2Client
+            .authorize()
+            .returnResult()
+            .getResponseCookies()
+            .getFirst("JSESSIONID")
+            .getValue();
+
+        var loginResult = oauth2Client
+            .login(activeUser.getEmail(), password, jsessionid)
+            .returnResult();
+
+        String newJsessionid = loginResult
+            .getResponseCookies()
+            .getFirst("JSESSIONID")
+            .getValue();
+        var redirectBackToAuthorize = loginResult
+            .getResponseHeaders()
+            .getLocation();
+
+        restCli
+            .get()
+            .uri(redirectBackToAuthorize)
+            .cookie("JSESSIONID", newJsessionid)
+            .exchange()
+            .expectStatus()
+            .is3xxRedirection()
+            .expectHeader()
+            .value("Location", location -> {
+                assertThat(location).startsWith(oauth2Client.getRedirectUri());
+                assertThat(location).contains("code=");
+            });
     }
 }

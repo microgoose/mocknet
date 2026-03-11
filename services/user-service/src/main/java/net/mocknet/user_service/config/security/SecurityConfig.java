@@ -73,6 +73,7 @@ public class SecurityConfig {
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) {
         http
             .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin(Customizer.withDefaults());

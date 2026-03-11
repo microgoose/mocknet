@@ -23,7 +23,7 @@ public final class TestUserFactory {
     public static final String BASE_LOGIN = "testuser";
     public static final String BASE_EMAIL_DOMAIN = "@example.com";
     public static final String BASE_PASSWORD = "abcd1234";
-    public static final String BASE_PASSWORD_HASH = "$2a$12$chbqsiwnuxF2LyePY9nsluXmefw.r9rpajnC/EMceEpLYKDyyWYUu";
+    public static final String BASE_PASSWORD_HASH = "some-fake-password-hash";
     public static final String BASE_FIRST_NAME = "John";
     public static final String BASE_LAST_NAME = "Doe";
     public static final String BASE_AVATAR_PATH = "https://example.com/avatar";
