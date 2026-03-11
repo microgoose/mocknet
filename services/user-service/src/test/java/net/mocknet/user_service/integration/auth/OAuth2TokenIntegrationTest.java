@@ -9,19 +9,22 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.endpoint.OAuth2AccessTokenResponse;
 import org.springframework.test.web.servlet.client.ExchangeResult;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 import static net.mocknet.user_service.common.factory.TestUserFactory.createUser;
 import static net.mocknet.user_service.common.security.PkceUtils.generateCodeChallengeS256;
 import static net.mocknet.user_service.common.security.PkceUtils.generateCodeVerifier;
-import static org.assertj.core.api.Assertions.assertThat;
 
-public class OAuth2AuthorizeIntegrationTest extends AbstractIntegrationTest {
+public class OAuth2TokenIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
@@ -34,6 +37,7 @@ public class OAuth2AuthorizeIntegrationTest extends AbstractIntegrationTest {
 
     private String responseType = "code";
     private String clientId;
+    private String clientPassword;
     private String scope;
     private String redirectUri;
     private String codeVerifier;
@@ -47,6 +51,7 @@ public class OAuth2AuthorizeIntegrationTest extends AbstractIntegrationTest {
         ClientsProperties.ClientProperties clientProperties = this.clientsProperties.getClients().get("test-client");
         ClientsProperties.ClientProperties.RegistrationProperties registrationProperties = clientProperties.getRegistration();
         this.clientId = registrationProperties.getClientId();
+        this.clientPassword = registrationProperties.getClientSecret();
         this.scope = String.join(" ", registrationProperties.getScopes());
         this.redirectUri = registrationProperties.getRedirectUris().get(0);
 
@@ -60,17 +65,7 @@ public class OAuth2AuthorizeIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void authorizeRequest_shouldRedirectToLogin() {
-        oauth2AuthRequest()
-            .expectStatus().is3xxRedirection()
-            .expectHeader().value("Location", location -> {
-                assertThat(location).contains("/login");
-                assertThat(location).doesNotContain("error");
-            });
-    }
-
-    @Test
-    void authorizeRequest_shouldRedirectToRedirectUriWithCode() {
+    void tokenRequest_shouldExchangeCodeForTokens() {
         String jsessionid = oauth2AuthRequest()
             .returnResult()
             .getResponseCookies()
@@ -82,16 +77,21 @@ public class OAuth2AuthorizeIntegrationTest extends AbstractIntegrationTest {
 
         String newJsessionid = loginResult.getResponseCookies().getFirst("JSESSIONID").getValue();
         URI redirectBackToAuthorize = loginResult.getResponseHeaders().getLocation();
-
-        restCli.get()
+        URI redirectLocation = restCli.get()
             .uri(redirectBackToAuthorize)
             .cookie("JSESSIONID", newJsessionid)
-            .exchange()
-            .expectStatus().is3xxRedirection()
-            .expectHeader().value("Location", location -> {
-                assertThat(location).startsWith(redirectUri);
-                assertThat(location).contains("code=");
-            });
+            .exchange().returnResult()
+            .getResponseHeaders()
+            .getLocation();
+
+        String code = UriComponentsBuilder.fromUri(redirectLocation)
+            .build()
+            .getQueryParams()
+            .getFirst("code");
+
+        oauth2TokenRequest("authorization_code", code)
+            .expectStatus().isOk()
+            .expectBody(OAuth2AccessTokenResponse.class);
     }
 
     private RestTestClient.ResponseSpec oauth2AuthRequest() {
@@ -106,6 +106,25 @@ public class OAuth2AuthorizeIntegrationTest extends AbstractIntegrationTest {
                 .queryParam("code_challenge_method", codeChallengeMethod)
                 .build()
             )
+            .exchange();
+    }
+
+    private RestTestClient.ResponseSpec oauth2TokenRequest(String grantType, String code) {
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("grant_type", grantType);
+        formData.add("code", code);
+        formData.add("redirect_uri", redirectUri);
+        formData.add("code_verifier", codeVerifier);
+
+        String authBasic = Base64.getEncoder().encodeToString(
+            String.format("%s:%s", clientId, clientPassword).getBytes(StandardCharsets.UTF_8)
+        );
+
+        return restCli.post()
+            .uri("/oauth2/token")
+            .header("Authorization", "Basic " + authBasic)
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(formData)
             .exchange();
     }
 

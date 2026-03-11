@@ -1,10 +1,6 @@
 server:
   port: 9000
 
-logging:
-  level:
-    org.springframework.security: debug
-
 app:
   email-verification:
     token-ttl-hours: 24
@@ -29,9 +25,9 @@ app:
           - "client_credentials"
           - "refresh_token"
         redirect-uris:
-          - "http://127.0.0.1:9000/login/oauth2/code/gateway"
+          - "http://127.0.0.1:8000/login/oauth2/code/"
         post-logout-redirect-uris:
-          - "http://127.0.0.1:9000/"
+          - "http://127.0.0.1:8000/"
         scopes:
           - "openid"
           - "profile"
@@ -53,10 +49,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    properties:
-      hibernate:
-        format_sql: true
-    show-sql: true
+    show-sql: false
     open-in-view: false
 
   kafka:

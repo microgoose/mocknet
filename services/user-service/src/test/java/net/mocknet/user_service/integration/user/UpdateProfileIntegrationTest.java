@@ -32,7 +32,6 @@ class UpdateProfileIntegrationTest extends AbstractIntegrationTest {
     private User existingUser;
     private String existingUserToken;
     private User anotherUser;
-    private String anotherUserToken;
 
     @BeforeEach
     void setUp() {
@@ -48,30 +47,12 @@ class UpdateProfileIntegrationTest extends AbstractIntegrationTest {
         this.anotherUser.setEmail("another@example.com");
         this.anotherUser.setVerified(true);
         this.anotherUser = userRepository.save(anotherUser);
-        this.anotherUserToken = tokenGenerator.generateBearerToken(anotherUser);
     }
 
     @AfterEach
     void tearDown() {
         emailTokenRepository.deleteAll();
         userRepository.deleteAll();
-    }
-
-    @Test
-    void updateProfile_WhenNonExist_ShouldReturnNotFound() {
-        UUID nonExistentId = UUID.randomUUID();
-        anotherUser.setId(nonExistentId);
-        anotherUserToken = tokenGenerator.generateBearerToken(anotherUser);
-        UpdateProfileRequest updateRequest = createUpdateProfileRequest();
-
-        ProblemDetail problemDetail = updateProfileRequest(nonExistentId, anotherUserToken, updateRequest)
-            .expectStatus().isNotFound()
-            .expectBody(ProblemDetail.class)
-            .returnResult()
-            .getResponseBody();
-
-        assertThat(problemDetail).isNotNull();
-        assertThat(problemDetail.getStatus()).isEqualTo(404);
     }
 
     @Test

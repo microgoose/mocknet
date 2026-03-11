@@ -48,7 +48,6 @@ class LoginIntegrationTest extends AbstractIntegrationTest {
             .exchange()
             .expectStatus().isFound()
             .expectCookie().exists("JSESSIONID")
-            .expectHeader().exists("Location")
             .expectHeader().value("Location", location ->
                 assertThat(location).doesNotContain("/login?error")
             );
